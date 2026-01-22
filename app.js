@@ -53,6 +53,8 @@ function addElement(type) {
         width: type === 'rectangle' ? 150 : 200,
         height: type === 'rectangle' ? 100 : 60,
         rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
         backgroundColor: type === 'rectangle' ? '#d9d9d9' : 'transparent',
         color: 'white',
         text: type === 'text' ? 'Text' : '',
@@ -101,6 +103,7 @@ function renderElement(el) {
     div.style.backgroundColor = el.backgroundColor;
     div.style.color = el.color;
     div.style.transform = `rotate(${el.rotation}deg)`;
+    div.style.transform += ` scaleX(${el.scaleX || 1}) scaleY(${el.scaleY || 1})`;
     div.style.zIndex = el.zIndex;
 
     if (el.type === 'text') {
@@ -446,9 +449,9 @@ function updateProperties() {
                             <input type="number" class="property-input-compact" id="prop-rotation" value="${el.rotation}" min="0" max="360">
                         </div>
                         <div class="horizontal">
-                            <button class="align-btn" id="rotate-ccw" title="Rotate Counter-Clockwise">↶</button>
-                            <button class="align-btn" id="rotate-45" title="Rotate 45°">◇</button>
-                            <button class="align-btn" id="rotate-cw" title="Rotate Clockwise">↷</button>
+                            <button class="align-btn" id="rotate-90" title="Rotate 90°">◇</button>
+                            <button class="align-btn" id="flip-h" title="Flip Horizontal">⇄</button>
+                            <button class="align-btn" id="flip-v" title="Flip Vertical">⇅</button>
                         </div>
                     </div>
                 </div>
@@ -516,34 +519,34 @@ function updateProperties() {
     });
 
     // Rotation buttons
-    const rotateCCW = document.getElementById('rotate-ccw');
-    const rotate45 = document.getElementById('rotate-45');
-    const rotateCW = document.getElementById('rotate-cw');
+    const rotate90 = document.getElementById('rotate-90');
+    const flipH = document.getElementById('flip-h');
+    const flipV = document.getElementById('flip-v');
 
-    if (rotateCCW) {
-        rotateCCW.addEventListener('click', (e) => {
+    if (rotate90) {
+        rotate90.addEventListener('click', (e) => {
             e.preventDefault();
-            el.rotation = (el.rotation - 15 + 360) % 360;
+            el.rotation = (el.rotation - 90 + 360) % 360;
             renderElement(el);
             updateProperties();
             saveHistory();
         });
     }
 
-    if (rotate45) {
-        rotate45.addEventListener('click', (e) => {
+    if (flipH) {
+        flipH.addEventListener('click', (e) => {
             e.preventDefault();
-            el.rotation = (el.rotation + 45) % 360;
+            el.scaleX = (el.scaleX || 1) * -1;
             renderElement(el);
             updateProperties();
             saveHistory();
         });
     }
 
-    if (rotateCW) {
-        rotateCW.addEventListener('click', (e) => {
+    if (flipV) {
+        flipV.addEventListener('click', (e) => {
             e.preventDefault();
-            el.rotation = (el.rotation + 15) % 360;
+            el.scaleY = (el.scaleY || 1) * -1;
             renderElement(el);
             updateProperties();
             saveHistory();
