@@ -268,12 +268,16 @@ body {
 
 .design-element {
     position: absolute;
-    cursor: move;
+    cursor: grab;
     transition: box-shadow 0.2s ease;
 }
 
 .design-element:hover {
     box-shadow: 0 4px 16px var(--accent-soft);
+}
+
+.design-element.grabbing {
+    cursor: grabbing;
 }
 
 .design-element.selected {
@@ -285,14 +289,23 @@ body {
 }
 
 .design-element.text {
-    background: transparent;
     color: var(--text-primary);
     padding: 12px;
     font-size: 16px;
     font-weight: 500;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.text-wrapper {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .resize-handle {
@@ -304,6 +317,8 @@ body {
     border-radius: 2px;
     display: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    z-index: 1000;
 }
 
 .design-element.selected .resize-handle {
@@ -502,7 +517,8 @@ body {
     margin-top: 10px;
 }
 
-.vertical, .horizontal {
+.vertical,
+.horizontal {
     padding: 5px;
     border-radius: var(--radius);
     background-color: var(--bg-hover);
@@ -532,6 +548,19 @@ body {
     border-color: var(--accent);
 }
 
+.delete-btn {
+    width: 100%;
+    padding: 12px 14px;
+    background: #ff4d4d;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 8px;
@@ -553,6 +582,6 @@ body {
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+    -webkit-appearance: none;
+    margin: 0;
 }

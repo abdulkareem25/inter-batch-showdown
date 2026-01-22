@@ -55,8 +55,8 @@ function addElement(type) {
         rotation: 0,
         scaleX: 1,
         scaleY: 1,
-        backgroundColor: type === 'rectangle' ? '#d9d9d9' : 'transparent',
-        color: 'white',
+        backgroundColor: type === 'rectangle' ? '#d9d9d9' : '#000000',
+        color: '#d9d9d9',
         text: type === 'text' ? 'Text' : '',
         zIndex: state.elements.length
     };
@@ -87,7 +87,10 @@ function renderElement(el) {
         });
 
         div.addEventListener('mousedown', (e) => {
-            if (!e.target.classList.contains('resize-handle')) {
+            // Check if target or any parent is a resize handle
+            const isResizeHandle = e.target.classList.contains('resize-handle') || 
+                                   e.target.closest('.resize-handle');
+            if (!isResizeHandle) {
                 startDrag(e, el.id);
             }
         });
@@ -107,7 +110,14 @@ function renderElement(el) {
     div.style.zIndex = el.zIndex;
 
     if (el.type === 'text') {
-        div.textContent = el.text;
+        // Find or create a text wrapper to avoid destroying resize handles
+        let textWrapper = div.querySelector('.text-wrapper');
+        if (!textWrapper) {
+            textWrapper = document.createElement('div');
+            textWrapper.className = 'text-wrapper';
+            div.insertBefore(textWrapper, div.firstChild);
+        }
+        textWrapper.textContent = el.text;
     }
 }
 
@@ -151,6 +161,7 @@ function startDrag(e, id) {
 
     selectElement(id);
     const el = state.elements.find(e => e.id === id);
+    const dragElement = document.getElementById(id);
 
     state.dragData = {
         id: id,
@@ -159,6 +170,11 @@ function startDrag(e, id) {
         elementStartX: el.x,
         elementStartY: el.y
     };
+
+    // Add grabbing cursor
+    if (dragElement) {
+        dragElement.classList.add('grabbing');
+    }
 }
 
 function handleMouseMove(e) {
@@ -189,6 +205,14 @@ function handleMouseMove(e) {
 }
 
 function handleMouseUp() {
+    // Remove grabbing cursor
+    if (state.dragData) {
+        const dragElement = document.getElementById(state.dragData.id);
+        if (dragElement) {
+            dragElement.classList.remove('grabbing');
+        }
+    }
+
     state.dragData = null;
     state.resizeData = null;
 }
@@ -249,6 +273,13 @@ function handleResize(e) {
 
 // Keyboard Interactions
 function handleKeyboard(e) {
+    // Only run if canvas is focused or if focus is not on an input element
+    const activeElement = document.activeElement;
+    const isFormElement = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA';
+    const isCanvasFocused = activeElement === canvas || activeElement === document.body;
+    
+    if (isFormElement && activeElement !== canvas) return;
+
     if (!state.selectedId) return;
 
     const el = state.elements.find(e => e.id === state.selectedId);
@@ -265,20 +296,6 @@ function handleKeyboard(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
         e.preventDefault();
         duplicateSelected();
-        return;
-    }
-
-    // Ctrl+Z - Undo
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        undo();
-        return;
-    }
-
-    // Ctrl+Y - Redo
-    if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        e.preventDefault();
-        redo();
         return;
     }
 
@@ -482,6 +499,10 @@ function updateProperties() {
                         </div>
                     </div>
                 ` : ''}
+
+                <div class="delete">
+                    <button class="delete-btn" id="deleteElementBtn">Delete Element</button>
+                </div>
             `;
 
     // Attach event listeners
@@ -536,7 +557,7 @@ function updateProperties() {
     if (flipH) {
         flipH.addEventListener('click', (e) => {
             e.preventDefault();
-            el.scaleX = (el.scaleX || 1) * -1;
+            el.scaleX *= -1;
             renderElement(el);
             updateProperties();
             saveHistory();
@@ -546,7 +567,7 @@ function updateProperties() {
     if (flipV) {
         flipV.addEventListener('click', (e) => {
             e.preventDefault();
-            el.scaleY = (el.scaleY || 1) * -1;
+            el.scaleY *= -1;
             renderElement(el);
             updateProperties();
             saveHistory();
@@ -597,12 +618,17 @@ function updateProperties() {
             saveHistory();
         });
     }
+
+    // Delete button
+    document.getElementById('deleteElementBtn').addEventListener('click', () => {
+        deleteElement(el.id);
+    });
 }
 
 // Alignment Functions
 function alignElements(direction) {
     if (!state.selectedId) return;
-    
+
     const el = state.elements.find(e => e.id === state.selectedId);
     if (!el) return;
 
@@ -638,7 +664,7 @@ function alignElements(direction) {
 function toggleGrid() {
     state.gridEnabled = !state.gridEnabled;
     const gridToggle = document.getElementById('gridToggle');
-    
+
     if (state.gridEnabled) {
         canvas.style.backgroundImage = `linear-gradient(0deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent),
                                        linear-gradient(90deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent)`;
@@ -765,7 +791,11 @@ function exportHTML() {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Exported Design</title>
             <style>
-                body, html { margin: 0; padding: 0; }
+                body, html { 
+                    margin: 0; 
+                    padding: 0; 
+                    background: #1e1e1e;
+                }
                 .design-element {
                     position: absolute;
                     box-sizing: border-box;
@@ -798,4 +828,14 @@ function exportHTML() {
     a.download = 'design.html';
     a.click();
     URL.revokeObjectURL(url);
+}
+
+function deleteElement(id) {
+    const index = state.elements.findIndex(e => e.id === id);
+    if (index > -1) {
+        state.elements.splice(index, 1);
+        document.getElementById(id)?.remove();
+        deselectElement();
+        renderLayers();
+    }
 }
