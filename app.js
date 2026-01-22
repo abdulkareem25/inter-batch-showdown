@@ -366,23 +366,22 @@ function renderLayers() {
                     </div>
                 `;
 
-        item.querySelector('.layer-info').addEventListener('click', () => selectElement(el.id));
-        item.querySelector('.layer-type').addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            renameElement(el.id, item.querySelector('.layer-type'));
-        });
-
-        const [upBtn, downBtn] = item.querySelectorAll('.layer-btn');
-        upBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            moveLayer(el.id, 1);
-        });
-        downBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            moveLayer(el.id, -1);
-        });
-
+        setupLayerEventListeners(el, item);
         layersList.appendChild(item);
+    });
+}
+
+function setupLayerEventListeners(el, item) {
+    item.querySelector('.layer-info').addEventListener('click', () => selectElement(el.id));
+
+    const [upBtn, downBtn] = item.querySelectorAll('.layer-btn');
+    upBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moveLayer(el.id, 1);
+    });
+    downBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moveLayer(el.id, -1);
     });
 }
 
@@ -698,32 +697,6 @@ function duplicateSelected() {
     renderLayers();
 }
 
-// Rename Element
-function renameElement(id, element) {
-    const el = state.elements.find(e => e.id === id);
-    if (!el) return;
-
-    const currentName = el.name;
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = currentName;
-    input.className = 'layer-rename-input';
-
-    element.replaceWith(input);
-    input.focus();
-    input.select();
-
-    function saveName() {
-        el.name = input.value || currentName;
-        renderLayers();
-    }
-
-    input.addEventListener('blur', saveName);
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') saveName();
-        if (e.key === 'Escape') renderLayers();
-    });
-}
 
 // History Management
 function saveHistory() {
