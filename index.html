@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Editor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sidebar: Layers Panel -->
+        <div class="sidebar">
+            <div class="sidebar-header">Layers</div>
+            <div class="layers-list" id="layersList"></div>
+            <div class="add-buttons">
+                <button class="add-btn" id="addRectangle">Add Rectangle</button>
+                <button class="add-btn" id="addText">Add Text</button>
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="canvas-container">
+            <div class="toolbar">
+                <button class="toolbar-btn" id="duplicateBtn" title="Duplicate (Ctrl+V)">Duplicate</button>
+                <button class="toolbar-btn" id="gridToggle" title="Toggle Grid">Grid</button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" id="saveBtn">Save</button>
+                <button class="toolbar-btn" id="clearBtn">Clear</button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" id="exportJSON">Export JSON</button>
+                <button class="toolbar-btn" id="exportHTML">Export HTML</button>
+            </div>
+            <div class="canvas-wrapper">
+                <div class="canvas" id="canvas"></div>
+            </div>
+        </div>
+
+        <!-- Properties Panel -->
+        <div class="properties-panel">
+            <div class="properties-header">
+                Properties
+            </div>
+            <div class="properties-content" id="propertiesContent">
+                <div class="no-selection">Select an element to edit properties</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
