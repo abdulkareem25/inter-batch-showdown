@@ -204,7 +204,7 @@ function startDrag(e, id) {
     }
 }
 
-// Optimized: Check if rotated element stays within canvas bounds
+// Check if rotated element stays within canvas bounds
 function checkBoundsWithRotation(el, newX, newY, canvasWidth, canvasHeight) {
     const rotation = el.rotation % 360;
     
@@ -341,7 +341,6 @@ function handleKeyboard(e) {
     // Only run if canvas is focused or if focus is not on an input element
     const activeElement = document.activeElement;
     const isFormElement = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA';
-    const isCanvasFocused = activeElement === canvas || activeElement === document.body;
     
     if (isFormElement && activeElement !== canvas) return;
 
