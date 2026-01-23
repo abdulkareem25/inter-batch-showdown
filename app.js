@@ -23,18 +23,20 @@ function init() {
     setupEventListeners();
     renderLayers();
     updateProperties();
+    updateHistoryButtons();
 }
 
 // Event Listeners Setup
 function setupEventListeners() {
     document.getElementById('addRectangle').addEventListener('click', () => addElement('rectangle'));
     document.getElementById('addText').addEventListener('click', () => addElement('text'));
-    document.getElementById('saveBtn').addEventListener('click', saveToStorage);
     document.getElementById('clearBtn').addEventListener('click', clearCanvas);
     document.getElementById('exportJSON').addEventListener('click', exportJSON);
     document.getElementById('exportHTML').addEventListener('click', exportHTML);
     document.getElementById('gridToggle').addEventListener('click', toggleGrid);
     document.getElementById('duplicateBtn').addEventListener('click', duplicateSelected);
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
 
     canvas.addEventListener('click', handleCanvasClick);
     document.addEventListener('keydown', handleKeyboard);
@@ -269,6 +271,11 @@ function handleMouseUp() {
         if (dragElement) {
             dragElement.classList.remove('grabbing');
         }
+        saveHistory();
+    }
+
+    if (state.resizeData) {
+        saveHistory();
     }
 
     state.dragData = null;
@@ -337,6 +344,20 @@ function handleKeyboard(e) {
     const isCanvasFocused = activeElement === canvas || activeElement === document.body;
     
     if (isFormElement && activeElement !== canvas) return;
+
+    // Ctrl+Z / Cmd+Z - Undo (works even without selection)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+    }
+
+    // Ctrl+Y / Cmd+Y or Ctrl+Shift+Z / Cmd+Shift+Z - Redo (works even without selection)
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        redo();
+        return;
+    }
 
     if (!state.selectedId) return;
 
@@ -410,6 +431,7 @@ function deleteElement(id) {
         document.getElementById(id)?.remove();
         deselectElement();
         renderLayers();
+        saveHistory();
     }
 }
 
@@ -528,8 +550,9 @@ function moveLayer(id, direction) {
         });
 
         renderLayers();
+        saveHistory();
     }
-}
+}  
 
 // Properties Panel
 function updateProperties() {
@@ -832,6 +855,45 @@ function saveHistory() {
     state.history = state.history.slice(0, state.historyIndex + 1);
     state.history.push(JSON.parse(JSON.stringify(state.elements)));
     state.historyIndex++;
+    updateHistoryButtons();
+    autoSaveToStorage();
+}
+
+function undo() {
+    if (state.historyIndex > 0) {
+        state.historyIndex--;
+        state.elements = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
+        redrawCanvas();
+        deselectElement();
+        updateHistoryButtons();
+        autoSaveToStorage();
+    }
+}
+
+function redo() {
+    if (state.historyIndex < state.history.length - 1) {
+        state.historyIndex++;
+        state.elements = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
+        redrawCanvas();
+        deselectElement();
+        updateHistoryButtons();
+        autoSaveToStorage();
+    }
+}
+
+function updateHistoryButtons() {
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    
+    undoBtn.disabled = state.historyIndex <= 0;
+    redoBtn.disabled = state.historyIndex >= state.history.length - 1;
+}
+
+function autoSaveToStorage() {
+    localStorage.setItem('visualEditor', JSON.stringify({
+        elements: state.elements,
+        nextId: state.nextId
+    }));
 }
 
 function redrawCanvas() {
@@ -842,14 +904,6 @@ function redrawCanvas() {
 }
 
 // Persistence
-function saveToStorage() {
-    localStorage.setItem('visualEditor', JSON.stringify({
-        elements: state.elements,
-        nextId: state.nextId
-    }));
-    alert('Design saved successfully!');
-}
-
 function loadFromStorage() {
     const saved = localStorage.getItem('visualEditor');
     if (saved) {
