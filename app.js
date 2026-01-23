@@ -134,8 +134,19 @@ function selectElement(id) {
         selectedEl.classList.add('selected');
     }
 
-    renderLayers();
+    updateLayerSelectionUI();
     updateProperties();
+}
+
+function updateLayerSelectionUI() {
+    document.querySelectorAll('.layer-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+
+    const selectedLayerItem = document.querySelector(`.layer-item[data-id="${state.selectedId}"]`);
+    if (selectedLayerItem) {
+        selectedLayerItem.classList.add('selected');
+    }
 }
 
 function deselectElement() {
@@ -402,6 +413,59 @@ function deleteElement(id) {
     }
 }
 
+// Rename Element
+function startRenameElement(el, layerTypeElement) {
+    const originalName = el.name;
+    const input = document.createElement('input');
+    
+    input.type = 'text';
+    input.value = originalName;
+    input.className = 'layer-rename-input';
+    input.maxLength = 50;
+    
+    layerTypeElement.replaceWith(input);
+    input.focus();
+    input.select();
+    console.log('Input for renaming:', input);
+    
+    const saveRename = () => {
+        const newName = input.value.trim();
+        if (newName && newName !== originalName) {
+            el.name = newName;
+            saveHistory();
+        } else if (!newName) {
+            el.name = originalName;
+        }
+        renderLayers();
+        selectElement(el.id);
+    };
+    
+    const cancelRename = () => {
+        renderLayers();
+        selectElement(el.id);
+    };
+    
+    const handleKeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            saveRename();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            cancelRename();
+        }
+    };
+    
+    const handleBlur = () => {
+        input.removeEventListener('keydown', handleKeydown);
+        saveRename();
+    };
+    
+    input.addEventListener('keydown', handleKeydown);
+    input.addEventListener('blur', handleBlur, { once: true });
+}
+
 // Layers Panel
 function renderLayers() {
     layersList.innerHTML = '';
@@ -409,6 +473,7 @@ function renderLayers() {
     [...state.elements].reverse().forEach(el => {
         const item = document.createElement('div');
         item.className = `layer-item ${el.id === state.selectedId ? 'selected' : ''}`;
+        item.setAttribute('data-id', el.id);
 
         item.innerHTML = `
                     <div class="layer-icon">${el.type === 'rectangle' ? '▭' : 'T'}</div>
@@ -428,7 +493,15 @@ function renderLayers() {
 }
 
 function setupLayerEventListeners(el, item) {
-    item.querySelector('.layer-info').addEventListener('click', () => selectElement(el.id));
+    const layerInfo = item.querySelector('.layer-info');
+    const layerType = item.querySelector('.layer-type');
+
+    layerInfo.addEventListener('click', () => selectElement(el.id));
+    layerType.addEventListener('dblclick', (e) => {
+        console.log('Renaming element:', el, layerType);
+        e.stopPropagation();
+        startRenameElement(el, layerType);
+    });
 
     const [upBtn, downBtn] = item.querySelectorAll('.layer-btn');
     upBtn.addEventListener('click', (e) => {

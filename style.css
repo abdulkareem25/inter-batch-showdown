@@ -124,6 +124,25 @@ body {
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.layer-type:hover {
+    opacity: 0.8;
+}
+
+.layer-rename-input {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 4px;
 }
 
 .layer-id {
