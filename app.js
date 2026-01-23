@@ -163,18 +163,65 @@ function startDrag(e, id) {
     const el = state.elements.find(e => e.id === id);
     const dragElement = document.getElementById(id);
 
+    // Pre-calculate trig values for this drag
+    const rotation = el.rotation % 360;
+    let rotW = el.width, rotH = el.height;
+    
+    if (rotation !== 0) {
+        const rad = (rotation * Math.PI) / 180;
+        const absCos = Math.abs(Math.cos(rad));
+        const absSin = Math.abs(Math.sin(rad));
+        rotW = el.width * absCos + el.height * absSin;
+        rotH = el.width * absSin + el.height * absCos;
+    }
+
     state.dragData = {
         id: id,
         startX: e.clientX,
         startY: e.clientY,
         elementStartX: el.x,
-        elementStartY: el.y
+        elementStartY: el.y,
+        rotatedWidth: rotW,
+        rotatedHeight: rotH
     };
 
     // Add grabbing cursor
     if (dragElement) {
         dragElement.classList.add('grabbing');
     }
+}
+
+// Optimized: Check if rotated element stays within canvas bounds
+function checkBoundsWithRotation(el, newX, newY, canvasWidth, canvasHeight) {
+    const rotation = el.rotation % 360;
+    
+    // Fast path: no rotation
+    if (rotation === 0) {
+        return newX >= 0 && newX + el.width <= canvasWidth && 
+               newY >= 0 && newY + el.height <= canvasHeight;
+    }
+
+    const rad = (rotation * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const absCosin = Math.abs(cos);
+    const absSin = Math.abs(sin);
+
+    // Calculate rotated bounding box dimensions
+    const rotatedWidth = el.width * absCosin + el.height * absSin;
+    const rotatedHeight = el.width * absSin + el.height * absCosin;
+
+    // Center point
+    const centerX = newX + el.width / 2;
+    const centerY = newY + el.height / 2;
+
+    // Check if rotated bounding box stays within canvas
+    const minX = centerX - rotatedWidth / 2;
+    const maxX = centerX + rotatedWidth / 2;
+    const minY = centerY - rotatedHeight / 2;
+    const maxY = centerY + rotatedHeight / 2;
+
+    return minX >= 0 && maxX <= canvasWidth && minY >= 0 && maxY <= canvasHeight;
 }
 
 function handleMouseMove(e) {
@@ -189,11 +236,11 @@ function handleMouseMove(e) {
         let newX = state.dragData.elementStartX + dx;
         let newY = state.dragData.elementStartY + dy;
 
-        newX = Math.max(0, Math.min(newX, canvasRect.width - el.width));
-        newY = Math.max(0, Math.min(newY, canvasRect.height - el.height));
-
-        el.x = newX;
-        el.y = newY;
+        // Check if new position keeps all corners within bounds
+        if (checkBoundsWithRotation(el, newX, newY, canvasRect.width, canvasRect.height)) {
+            el.x = newX;
+            el.y = newY;
+        }
 
         renderElement(el);
         updateProperties();
@@ -243,7 +290,7 @@ function handleResize(e) {
     const dy = e.clientY - state.resizeData.startY;
     const pos = state.resizeData.position;
 
-    const minSize = 30;
+    const minSize = el.type === 'rectangle' ? 30 : 45;
 
     if (pos === 'se') {
         el.width = Math.max(minSize, state.resizeData.startWidth + dx);
@@ -309,25 +356,34 @@ function handleKeyboard(e) {
     const step = e.shiftKey ? 10 : 5;
     const canvasRect = canvas.getBoundingClientRect();
 
+    let newX = el.x;
+    let newY = el.y;
+
     switch (e.key) {
         case 'ArrowLeft':
             e.preventDefault();
-            el.x = Math.max(0, el.x - step);
+            newX = el.x - step;
             break;
         case 'ArrowRight':
             e.preventDefault();
-            el.x = Math.min(canvasRect.width - el.width, el.x + step);
+            newX = el.x + step;
             break;
         case 'ArrowUp':
             e.preventDefault();
-            el.y = Math.max(0, el.y - step);
+            newY = el.y - step;
             break;
         case 'ArrowDown':
             e.preventDefault();
-            el.y = Math.min(canvasRect.height - el.height, el.y + step);
+            newY = el.y + step;
             break;
         default:
             return;
+    }
+
+    // Check if new position keeps all corners within bounds
+    if (checkBoundsWithRotation(el, newX, newY, canvasRect.width, canvasRect.height)) {
+        el.x = newX;
+        el.y = newY;
     }
 
     renderElement(el);
@@ -546,7 +602,7 @@ function updateProperties() {
     if (rotate90) {
         rotate90.addEventListener('click', (e) => {
             e.preventDefault();
-            el.rotation = (el.rotation - 90 + 360) % 360;
+            el.rotation = (el.rotation + 90) % 360;
             renderElement(el);
             updateProperties();
             saveHistory();
@@ -786,7 +842,7 @@ function exportHTML() {
             height: ${el.height}px;
             background-color: ${el.backgroundColor};
             color: ${el.color};
-            transform: rotate(${el.rotation}deg);
+            transform: rotate(${el.rotation}deg) scaleX(${el.scaleX || 1}) scaleY(${el.scaleY || 1});
             z-index: ${el.zIndex};
         ">${el.type === 'text' ? el.text : ''}</div>\n`;
     });
