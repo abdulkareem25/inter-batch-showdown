@@ -234,7 +234,7 @@ body {
 }
 
 .toolbar-btn {
-    padding: 10px 16px;
+    padding: 9.5px 16px;
     background: var(--bg-elevated);
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
