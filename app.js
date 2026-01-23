@@ -812,6 +812,19 @@ function exportJSON() {
 }
 
 function exportHTML() {
+    // Calculate bounding box of all elements
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    state.elements.forEach(el => {
+        minX = Math.min(minX, el.x);
+        minY = Math.min(minY, el.y);
+        maxX = Math.max(maxX, el.x + el.width);
+        maxY = Math.max(maxY, el.y + el.height);
+    });
+    
+    const designWidth = maxX - minX;
+    const designHeight = maxY - minY;
+    
     let htmlContent = `
         <!DOCTYPE html>
         <html lang="en">
@@ -824,6 +837,22 @@ function exportHTML() {
                     margin: 0; 
                     padding: 0; 
                     background: #1e1e1e;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                }
+                .design-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100%;
+                    height: 100vh;
+                    position: relative;
+                }
+                .design-wrapper {
+                    position: relative;
+                    width: ${designWidth}px;
+                    height: ${designHeight}px;
                 }
                 .design-element {
                     position: absolute;
@@ -833,11 +862,13 @@ function exportHTML() {
             </style>
         </head>
         <body>
+            <div class="design-container">
+                <div class="design-wrapper">
     `;
     state.elements.forEach(el => {
         htmlContent += `<div class="design-element" style="
-            left: ${el.x}px;
-            top: ${el.y}px;
+            left: ${el.x - minX}px;
+            top: ${el.y - minY}px;
             width: ${el.width}px;
             height: ${el.height}px;
             background-color: ${el.backgroundColor};
@@ -847,6 +878,8 @@ function exportHTML() {
         ">${el.type === 'text' ? el.text : ''}</div>\n`;
     });
     htmlContent += `
+                </div>
+            </div>
         </body>
         </html>
     `;
