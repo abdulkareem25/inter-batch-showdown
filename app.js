@@ -24,6 +24,7 @@ function init() {
     renderLayers();
     updateProperties();
     updateHistoryButtons();
+    updateCanvasActionButtons();
 }
 
 // Event Listeners Setup
@@ -68,6 +69,7 @@ function addElement(type) {
     renderElement(el);
     selectElement(el.id);
     renderLayers();
+    updateCanvasActionButtons();
 }
 
 // Render Element on Canvas
@@ -138,6 +140,7 @@ function selectElement(id) {
 
     updateLayerSelectionUI();
     updateProperties();
+    updateCanvasActionButtons();
 }
 
 function updateLayerSelectionUI() {
@@ -158,6 +161,7 @@ function deselectElement() {
     });
     renderLayers();
     updateProperties();
+    updateCanvasActionButtons();
 }
 
 // Canvas Click Handler
@@ -849,6 +853,17 @@ function duplicateSelected() {
 }
 
 
+// Update Canvas Action Buttons
+function updateCanvasActionButtons() {
+    const hasElements = state.elements.length > 0;
+    const isElementSelected = state.selectedId !== null;
+    
+    document.getElementById('duplicateBtn').disabled = !isElementSelected;
+    document.getElementById('clearBtn').disabled = !hasElements;
+    document.getElementById('exportJSON').disabled = !hasElements;
+    document.getElementById('exportHTML').disabled = !hasElements;
+}
+
 // History Management
 function saveHistory() {
     state.history = state.history.slice(0, state.historyIndex + 1);
@@ -921,6 +936,7 @@ function clearCanvas() {
         canvas.innerHTML = '';
         renderLayers();
         updateProperties();
+        updateCanvasActionButtons();
         localStorage.removeItem('visualEditor');
     }
 }
